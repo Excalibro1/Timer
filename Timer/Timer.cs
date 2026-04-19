@@ -22,6 +22,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Sharp.Shared;
+using Sharp.Shared.Managers;
+using Sharp.Shared.Units;
 using Source2Surf.Timer.Managers;
 using Source2Surf.Timer.Managers.Command;
 using Source2Surf.Timer.Managers.Replay;
@@ -33,10 +35,11 @@ using Source2Surf.Timer.Shared.Interfaces;
 
 namespace Source2Surf.Timer;
 
-public class Timer : IModSharpModule
+public class Timer : IModSharpModule, ITimerHudFeed
 {
     private readonly InterfaceBridge         _bridge;
     private readonly ILogger<Timer>          _logger;
+    private readonly ISharpModuleManager     _sharpModules;
     private readonly ServiceProvider         _serviceProvider;
     private readonly CancellationTokenSource _token;
     private int                              _shutdownState;
@@ -99,6 +102,7 @@ public class Timer : IModSharpModule
         _token  = token;
         _bridge = bridge;
         _logger = logger;
+        _sharpModules = shared.GetSharpModuleManager();
     }
 
     public string DisplayName   => "SurfTimer";
@@ -173,6 +177,7 @@ public class Timer : IModSharpModule
 
     public void PostInit()
     {
+        _sharpModules.RegisterSharpModuleInterface<ITimerHudFeed>(this, ITimerHudFeed.Identity, this);
         RefreshRequestManager();
         RefreshCommandManager();
         RefreshReplayProvider();
@@ -331,5 +336,66 @@ public class Timer : IModSharpModule
     private void RefreshReplayProvider()
     {
         _serviceProvider.GetService<ReplayProviderProxy>()?.RefreshProvider();
+    }
+
+    public bool TryGetWidgetText(int slot, out string text)
+    {
+        text = string.Empty;
+
+        var timerModule = _serviceProvider.GetService<ITimerModule>();
+        var recordModule = _serviceProvider.GetService<IRecordModule>();
+
+        if (timerModule is null || recordModule is null)
+        {
+            return false;
+        }
+
+        if (slot < 0 || slot >= 64)
+        {
+            return false;
+        }
+
+        var playerSlot = new PlayerSlot(slot);
+        var timerInfo = timerModule.GetTimerInfo(playerSlot);
+        if (timerInfo is null)
+        {
+            return false;
+        }
+
+        var client = _bridge.ClientManager.GetGameClient(playerSlot);
+        if (client is null || client.IsFakeClient)
+        {
+            return false;
+        }
+
+        var pawn = client.GetPlayerController()?.GetPlayerPawn();
+        if (pawn is null || !pawn.IsValidEntity)
+        {
+            return false;
+        }
+
+        var speed = (int)pawn.GetAbsVelocity().Length2D();
+        var status = timerInfo.Status == Shared.Models.Timer.ETimerStatus.Paused ? " PAUSE" : string.Empty;
+        var sync = timerInfo.Sync * 100f;
+        var pb = recordModule.GetPlayerRecord(playerSlot, timerInfo.Style, timerInfo.Track);
+        var wr = recordModule.GetWRTime(timerInfo.Style, timerInfo.Track);
+
+        text = $"TIME {FormatTime(timerInfo.Time)}{status}\n" +
+               $"SPD {speed} SYNC {sync:0.0}\n" +
+               $"PB {FormatTime(pb?.Time)} WR {FormatTime(wr)}";
+        return true;
+    }
+
+    private static string FormatTime(float? seconds)
+    {
+        if (seconds is null || seconds < 0f)
+        {
+            return "N/A";
+        }
+
+        var total = Math.Max(0f, seconds.Value);
+        var mins = (int)(total / 60f);
+        var secs = total - (mins * 60f);
+        return $"{mins:00}:{secs:00.00}";
     }
 }
