@@ -44,10 +44,10 @@ jobs:
         with:
           name: Timer-build
           path: |
-            Timer/bin/Release/net10.0/linux-x64/Timer.dll
-            Timer/bin/Release/net10.0/linux-x64/Timer.deps.json
-            Timer/bin/Release/net10.0/linux-x64/Timer.runtimeconfig.json
-            Timer.Shared/bin/Release/net10.0/Timer.Shared.dll
-            Timer.Shared/bin/Release/net10.0/Timer.Shared.deps.json
-            Timer.Shared/bin/Release/net10.0/Timer.Shared.runtimeconfig.json
+            **/bin/Release/**/Timer.dll
+            **/bin/Release/**/Timer.deps.json
+            **/bin/Release/**/Timer.runtimeconfig.json
+            **/bin/Release/**/Timer.Shared.dll
+            **/bin/Release/**/Timer.Shared.deps.json
+            **/bin/Release/**/Timer.Shared.runtimeconfig.json
           if-no-files-found: error
