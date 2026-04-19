@@ -50,6 +50,7 @@ internal class HudModule : IModule, IHudModule, ITimerModuleListener, IZoneModul
     private readonly IZoneModule   _zoneModule;
 
     private readonly ILogger<HudModule> _logger;
+    private readonly IConVar            _panoramaHudConVar;
 
     private static readonly float[] NextHudUpdateTime = new float[PlayerSlot.MaxPlayerCount];
 
@@ -75,6 +76,7 @@ internal class HudModule : IModule, IHudModule, ITimerModuleListener, IZoneModul
         _zoneModule   = zoneModule;
 
         _logger = logger;
+        _panoramaHudConVar = bridge.ConVarManager.CreateConVar("timer_panorama_hud", false)!;
 
         show_survival_respawn_status_event = bridge.EventManager.CreateEvent("show_survival_respawn_status", true)
                                              ?? throw new
@@ -145,6 +147,11 @@ internal class HudModule : IModule, IHudModule, ITimerModuleListener, IZoneModul
 
     private void OnPlayerRunCommandPost(IPlayerRunCommandHookParams param, HookReturnValue<EmptyHookReturn> ret)
     {
+        if (!_panoramaHudConVar.GetBool())
+        {
+            return;
+        }
+
         var client = param.Client;
 
         if (client.IsFakeClient)
