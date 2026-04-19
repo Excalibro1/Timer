@@ -49,5 +49,4 @@ jobs:
             **/bin/Release/**/Timer.runtimeconfig.json
             **/bin/Release/**/Timer.Shared.dll
             **/bin/Release/**/Timer.Shared.deps.json
-            **/bin/Release/**/Timer.Shared.runtimeconfig.json
           if-no-files-found: error
