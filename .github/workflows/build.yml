@@ -44,9 +44,5 @@ jobs:
         with:
           name: Timer-build
           path: |
-            **/bin/Release/**/Timer.dll
-            **/bin/Release/**/Timer.deps.json
-            **/bin/Release/**/Timer.runtimeconfig.json
-            **/bin/Release/**/Timer.Shared.dll
-            **/bin/Release/**/Timer.Shared.deps.json
+            **/bin/Release/**
           if-no-files-found: error
