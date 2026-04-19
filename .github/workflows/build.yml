@@ -38,11 +38,31 @@ jobs:
           path: build.log
           if-no-files-found: ignore
 
-      - name: Upload artifact
+      - name: Collect build outputs
         if: steps.build.outputs.exit_code == '0'
+        id: collect
+        shell: bash
+        run: |
+          mkdir -p artifact_out
+          find . -type f -path "*/bin/Release/*" \( \
+            -name "Timer.dll" -o \
+            -name "Timer.deps.json" -o \
+            -name "Timer.runtimeconfig.json" -o \
+            -name "Timer.Shared.dll" -o \
+            -name "Timer.Shared.deps.json" \
+          \) -print -exec cp --parents {} artifact_out/ \;
+
+          file_count=$(find artifact_out -type f | wc -l)
+          echo "file_count=${file_count}" >> "$GITHUB_OUTPUT"
+          if [ "${file_count}" -eq 0 ]; then
+            echo "No build output files found under bin/Release."
+            exit 1
+          fi
+
+      - name: Upload artifact
+        if: steps.build.outputs.exit_code == '0' && steps.collect.outputs.file_count != '0'
         uses: actions/upload-artifact@v4
         with:
           name: Timer-build
-          path: |
-            **/bin/Release/**
+          path: artifact_out
           if-no-files-found: error
