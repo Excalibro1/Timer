@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifact_out
-          find . -type f -path "*/bin/Release/*" \( \
+          find . -type f ! -path "*/obj/*" \( \
             -name "Timer.dll" -o \
             -name "Timer.deps.json" -o \
             -name "Timer.runtimeconfig.json" -o \
