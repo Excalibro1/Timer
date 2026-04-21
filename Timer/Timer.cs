@@ -389,7 +389,7 @@ public class Timer : IModSharpModule, ITimerHudFeed
         var syncText = $"SYNC {syncPercent:0.0}%";
 
         var checkpointText = timerInfo.Checkpoint != -1 
-            ? $"{timerInfo.Checkpoint}/{timerInfo.TotalCheckpoints}" 
+            ? $"{timerInfo.Checkpoint}/{timerInfo.Checkpoints.Count}" 
             : "---";
 
         var jumpsText = timerInfo.Jumps.ToString();
