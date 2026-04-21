@@ -338,7 +338,7 @@ public class Timer : IModSharpModule, ITimerHudFeed
         _serviceProvider.GetService<ReplayProviderProxy>()?.RefreshProvider();
     }
 
-    public bool TryGetWidgetText(int slot, out string text)
+    public bool TryGetWidgetText(int slot, TimerWidgetType widgetType, out string text)
     {
         text = string.Empty;
 
@@ -371,6 +371,85 @@ public class Timer : IModSharpModule, ITimerHudFeed
         var pawn = client.GetPlayerController()?.GetPlayerPawn();
         if (pawn is null || !pawn.IsValidEntity)
         {
+            return false;
+        }
+
+        var speed = (int)pawn.GetAbsVelocity().Length2D();
+        var pb = recordModule.GetPlayerRecord(playerSlot, timerInfo.Style, timerInfo.Track);
+        var wr = recordModule.GetWRTime(timerInfo.Style, timerInfo.Track);
+
+        var statusText = timerInfo.Status switch
+        {
+            Shared.Models.Timer.ETimerStatus.Running => "RUN",
+            Shared.Models.Timer.ETimerStatus.Paused => "PAUSE",
+            _ => "---"
+        };
+
+        var syncPercent = timerInfo.Sync * 100f;
+        var syncText = $"SYNC {syncPercent:0.0}%";
+
+        var checkpointText = timerInfo.Checkpoint != -1 
+            ? $"{timerInfo.Checkpoint}/{timerInfo.TotalCheckpoints}" 
+            : "---";
+
+        var jumpsText = timerInfo.Jumps.ToString();
+        var strafesText = timerInfo.Strafes.ToString();
+
+        text = widgetType switch
+        {
+            TimerWidgetType.Time => FormatTime(timerInfo.Time),
+            TimerWidgetType.Speed => speed.ToString(),
+            TimerWidgetType.Sync => syncText,
+            TimerWidgetType.Jumps => jumpsText,
+            TimerWidgetType.Strafes => strafesText,
+            TimerWidgetType.Checkpoint => checkpointText,
+            TimerWidgetType.Status => statusText,
+            TimerWidgetType.Track => $"T{timerInfo.Track}",
+            TimerWidgetType.PbTime => $"PB: {FormatTime(pb?.Time)}",
+            TimerWidgetType.WrTime => $"WR: {FormatTime(wr)}",
+            _ => string.Empty
+        };
+
+        return true;
+    }
+
+    // Backward compatibility wrapper
+    public bool TryGetWidgetText(int slot, out string text)
+    {
+        var timerModule = _serviceProvider.GetService<ITimerModule>();
+        var recordModule = _serviceProvider.GetService<IRecordModule>();
+
+        if (timerModule is null || recordModule is null)
+        {
+            text = string.Empty;
+            return false;
+        }
+
+        if (slot < 0 || slot >= 64)
+        {
+            text = string.Empty;
+            return false;
+        }
+
+        var playerSlot = new PlayerSlot(slot);
+        var timerInfo = timerModule.GetTimerInfo(playerSlot);
+        if (timerInfo is null)
+        {
+            text = string.Empty;
+            return false;
+        }
+
+        var client = _bridge.ClientManager.GetGameClient(playerSlot);
+        if (client is null || client.IsFakeClient)
+        {
+            text = string.Empty;
+            return false;
+        }
+
+        var pawn = client.GetPlayerController()?.GetPlayerPawn();
+        if (pawn is null || !pawn.IsValidEntity)
+        {
+            text = string.Empty;
             return false;
         }
 
